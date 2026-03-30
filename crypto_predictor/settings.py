@@ -65,9 +65,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'crypto_predictor.wsgi.application'
 
+default_db_url = f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
+if os.getenv('VERCEL') and not os.getenv('DATABASE_URL'):
+    # Vercel filesystem is read-only except /tmp; this enables quick demo deploys.
+    default_db_url = 'sqlite:////tmp/db.sqlite3'
+
 DATABASES = {
     'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        default=default_db_url,
         conn_max_age=600,
         ssl_require=False,
     )
