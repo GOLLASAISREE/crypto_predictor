@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: crypto-predictor
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    startCommand: gunicorn crypto_predictor.wsgi --log-file -
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: crypto-predictor.onrender.com
+      - key: SECRET_KEY
+        generateValue: true
