@@ -1,0 +1,139 @@
+{% extends 'crypto_app/base.html' %}
+{% block title %}Admin Dashboard — CryptoPredictor{% endblock %}
+{% block extra_css %}
+<style>
+.admin-header { background:linear-gradient(135deg,rgba(0,212,255,.1),rgba(247,147,26,.05));border:1px solid rgba(0,212,255,.3);border-radius:20px;padding:30px; }
+.stat-card { background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:24px;text-align:center;transition:all .3s; }
+.stat-card:hover { transform:translateY(-4px);box-shadow:0 10px 30px rgba(247,147,26,.15); }
+.stat-num { font-family:'Orbitron',sans-serif;font-size:2.8rem;font-weight:900;color:var(--primary); }
+.stat-label { color:#888;margin-top:5px;font-size:.9rem; }
+.admin-table th { color:#888;font-size:.82rem;text-transform:uppercase;letter-spacing:1px;border-color:rgba(255,255,255,.06)!important; }
+.admin-table td { border-color:rgba(255,255,255,.05)!important;color:#ddd;vertical-align:middle; }
+.admin-nav .nav-link { color:#aaa;border:1px solid transparent;border-radius:8px;margin:2px; }
+.admin-nav .nav-link:hover,.admin-nav .nav-link.active { background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.3);color:var(--accent); }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row g-4">
+    <!-- SIDEBAR -->
+    <div class="col-md-2">
+      <div class="card-crypto p-3">
+        <div class="text-center mb-3">
+          <i class="fas fa-shield-alt" style="font-size:2rem;color:var(--accent)"></i>
+          <div style="font-family:'Orbitron',sans-serif;font-size:.8rem;color:var(--accent);margin-top:5px">ADMIN PANEL</div>
+        </div>
+        <nav class="nav flex-column admin-nav">
+          <a class="nav-link active" href="{% url 'admin_dashboard' %}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a>
+          <a class="nav-link" href="{% url 'manage_users' %}"><i class="fas fa-users me-2"></i>Manage Users</a>
+          <a class="nav-link" href="{% url 'admin_predictions' %}"><i class="fas fa-chart-line me-2"></i>All Predictions</a>
+          <hr style="border-color:rgba(255,255,255,.1)"/>
+          <a class="nav-link" href="{% url 'home' %}"><i class="fas fa-home me-2"></i>Main Site</a>
+          <a class="nav-link" href="{% url 'logout' %}" style="color:#ff6b6b"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="col-md-10">
+      <!-- HEADER -->
+      <div class="admin-header mb-4">
+        <h2 style="font-family:'Orbitron',sans-serif;color:var(--accent);font-weight:900">
+          <i class="fas fa-tachometer-alt me-2"></i>ADMIN DASHBOARD
+        </h2>
+        <p style="color:#888;margin:0">Welcome, <strong style="color:#fff">{{ user.username }}</strong> — System Overview</p>
+      </div>
+
+      <!-- STATS -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+          <div class="stat-card">
+            <div class="stat-num">{{ total_users }}</div>
+            <div class="stat-label"><i class="fas fa-users me-1"></i>Total Users</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="stat-card">
+            <div class="stat-num" style="color:var(--accent)">{{ total_predictions }}</div>
+            <div class="stat-label"><i class="fas fa-chart-line me-1"></i>Predictions Run</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="stat-card">
+            <div class="stat-num" style="color:#00ff88">4</div>
+            <div class="stat-label"><i class="fas fa-robot me-1"></i>ML Algorithms</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="stat-card">
+            <div class="stat-num" style="color:#ffd700">10+</div>
+            <div class="stat-label"><i class="fas fa-coins me-1"></i>Cryptocurrencies</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <!-- RECENT USERS -->
+        <div class="col-lg-6">
+          <div class="card-crypto p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="fw-bold mb-0" style="color:#fff"><i class="fas fa-users me-2" style="color:var(--accent)"></i>Recent Users</h5>
+              <a href="{% url 'manage_users' %}" class="btn btn-sm btn-outline-info">View All</a>
+            </div>
+            <div class="table-responsive">
+              <table class="table admin-table mb-0">
+                <thead><tr><th>User</th><th>Email</th><th>Joined</th><th>Status</th></tr></thead>
+                <tbody>
+                  {% for u in users %}
+                  <tr>
+                    <td><strong>{{ u.username }}</strong></td>
+                    <td><small>{{ u.email|truncatechars:20 }}</small></td>
+                    <td><small>{{ u.date_joined|date:"d M Y" }}</small></td>
+                    <td>
+                      {% if u.is_active %}
+                        <span class="badge bg-success">Active</span>
+                      {% else %}
+                        <span class="badge bg-danger">Inactive</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr><td colspan="4" class="text-center" style="color:#666">No users yet</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECENT PREDICTIONS -->
+        <div class="col-lg-6">
+          <div class="card-crypto p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="fw-bold mb-0" style="color:#fff"><i class="fas fa-chart-bar me-2" style="color:var(--primary)"></i>Recent Predictions</h5>
+              <a href="{% url 'admin_predictions' %}" class="btn btn-sm btn-outline-warning">View All</a>
+            </div>
+            <div class="table-responsive">
+              <table class="table admin-table mb-0">
+                <thead><tr><th>User</th><th>Crypto</th><th>Algo</th><th>Predicted</th></tr></thead>
+                <tbody>
+                  {% for p in recent_predictions %}
+                  <tr>
+                    <td><small>{{ p.user.username }}</small></td>
+                    <td><strong style="color:var(--primary)">{{ p.crypto.symbol }}</strong></td>
+                    <td><small>{{ p.get_algorithm_display }}</small></td>
+                    <td><small>${{ p.predicted_price|floatformat:2 }}</small></td>
+                  </tr>
+                  {% empty %}
+                  <tr><td colspan="4" class="text-center" style="color:#666">No predictions yet</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends 'crypto_app/base.html' %}
+{% block title %}Dashboard — CryptoPredictor{% endblock %}
+{% block extra_css %}
+<style>
+.dashboard-header { background:linear-gradient(135deg,rgba(247,147,26,.1),rgba(0,212,255,.05));border:1px solid var(--border);border-radius:20px;padding:30px; }
+.prediction-form-card { background:var(--card-bg);border:1px solid var(--border);border-radius:20px;padding:30px; }
+.form-control,.form-select { background:rgba(255,255,255,.05)!important;border:1px solid rgba(247,147,26,.3)!important;color:#fff!important;border-radius:10px;padding:12px 16px; }
+.form-control:focus,.form-select:focus { border-color:var(--primary)!important;box-shadow:0 0 0 3px rgba(247,147,26,.15)!important; }
+.form-select option { background:#1a1a2e;color:#fff; }
+.algo-card { background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;cursor:pointer;transition:all .3s; }
+.algo-card:hover,.algo-card.selected { border-color:var(--primary);background:rgba(247,147,26,.08); }
+.algo-icon { font-size:2rem;margin-bottom:8px; }
+.crypto-select-grid { display:grid;grid-template-columns:repeat(5,1fr);gap:10px; }
+.crypto-btn { background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer;transition:all .2s;font-size:.8rem; }
+.crypto-btn:hover { border-color:var(--primary);background:rgba(247,147,26,.08); }
+.crypto-btn.active { border-color:var(--primary);background:rgba(247,147,26,.15);color:var(--primary); }
+.recent-table { font-size:.88rem; }
+.recent-table th { color:#888;font-weight:500;border-color:rgba(255,255,255,.05)!important; }
+.recent-table td { border-color:rgba(255,255,255,.05)!important;color:#ddd; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <!-- HEADER -->
+  <div class="dashboard-header mb-4">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 style="font-family:'Orbitron',sans-serif;color:var(--primary);font-weight:900">
+          <i class="fas fa-chart-line me-2"></i>PREDICTION DASHBOARD
+        </h2>
+        <p style="color:#aaa;margin:0">Welcome back, <strong style="color:#fff">{{ user.first_name|default:user.username }}</strong>! Run your ML predictions below.</p>
+      </div>
+      <div class="col-auto">
+        <a href="{% url 'prediction_history' %}" class="btn btn-outline-warning">
+          <i class="fas fa-history me-1"></i>History
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- PREDICTION FORM -->
+    <div class="col-lg-7">
+      <div class="prediction-form-card">
+        <h4 class="fw-bold mb-4" style="color:#fff"><i class="fas fa-robot me-2" style="color:var(--primary)"></i>Run ML Prediction</h4>
+        <form method="post" action="{% url 'predict' %}" id="predForm">
+          {% csrf_token %}
+
+          <!-- Crypto Selection -->
+          <div class="mb-4">
+            <label class="form-label fw-bold" style="color:#fff">Select Cryptocurrency</label>
+            <div class="crypto-select-grid mb-2">
+              {% for sym, info in crypto_info.items %}
+              <div class="crypto-btn" onclick="selectCrypto('{{sym}}', this)">
+                <div style="font-size:1.2rem;color:{{ info.color }}">{{ info.icon }}</div>
+                <div>{{ sym }}</div>
+              </div>
+              {% endfor %}
+            </div>
+            <select name="crypto" id="cryptoSelect" class="form-select mt-2">
+              {% for sym, info in crypto_info.items %}
+              <option value="{{ sym }}">{{ info.name }} ({{ sym }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Algorithm Selection -->
+          <div class="mb-4">
+            <label class="form-label fw-bold" style="color:#fff">Select ML Algorithm</label>
+            <div class="row g-2">
+              <div class="col-6">
+                <div class="algo-card selected" onclick="selectAlgo('lr',this)">
+                  <div class="algo-icon">📈</div>
+                  <div class="fw-bold">Linear Regression</div>
+                  <small style="color:#888">Classic trend analysis</small>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="algo-card" onclick="selectAlgo('lstm',this)">
+                  <div class="algo-icon">🧠</div>
+                  <div class="fw-bold">LSTM Neural Net</div>
+                  <small style="color:#888">Deep learning memory</small>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="algo-card" onclick="selectAlgo('svm',this)">
+                  <div class="algo-icon">⚡</div>
+                  <div class="fw-bold">SVM</div>
+                  <small style="color:#888">Support Vector Machine</small>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="algo-card" onclick="selectAlgo('rf',this)">
+                  <div class="algo-icon">🌲</div>
+                  <div class="fw-bold">Random Forest</div>
+                  <small style="color:#888">Ensemble prediction</small>
+                </div>
+              </div>
+            </div>
+            <input type="hidden" name="algorithm" id="algoInput" value="lr"/>
+          </div>
+
+          <!-- Target Date -->
+          <div class="mb-4">
+            <label class="form-label fw-bold" style="color:#fff"><i class="fas fa-calendar me-1"></i>Prediction Target Date</label>
+            <input type="date" name="target_date" class="form-control" id="targetDate" required/>
+            <small style="color:#888" class="mt-1 d-block">Select any future date to predict the price</small>
+          </div>
+
+          <button type="submit" class="btn btn-crypto w-100 py-3" id="predictBtn">
+            <i class="fas fa-magic me-2"></i>Run ML Prediction
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- SIDEBAR INFO -->
+    <div class="col-lg-5">
+      <div class="card-crypto p-4 mb-3">
+        <h5 class="fw-bold mb-3" style="color:var(--primary)"><i class="fas fa-info-circle me-2"></i>How It Works</h5>
+        <div class="d-flex gap-2 mb-2">
+          <span style="color:var(--primary);font-weight:bold">1.</span>
+          <span style="color:#aaa">Select a cryptocurrency (BTC, ETH, etc.)</span>
+        </div>
+        <div class="d-flex gap-2 mb-2">
+          <span style="color:var(--primary);font-weight:bold">2.</span>
+          <span style="color:#aaa">Choose your ML algorithm</span>
+        </div>
+        <div class="d-flex gap-2 mb-2">
+          <span style="color:var(--primary);font-weight:bold">3.</span>
+          <span style="color:#aaa">Pick a target prediction date</span>
+        </div>
+        <div class="d-flex gap-2 mb-2">
+          <span style="color:var(--primary);font-weight:bold">4.</span>
+          <span style="color:#aaa">Get AI predictions + investment advice</span>
+        </div>
+      </div>
+
+      <div class="card-crypto p-4 mb-3">
+        <h5 class="fw-bold mb-3" style="color:var(--accent)"><i class="fas fa-shield-alt me-2"></i>ML Metrics Explained</h5>
+        <p style="color:#aaa;font-size:.88rem"><strong style="color:#fff">MAE</strong> — Mean Absolute Error: Avg prediction error in $</p>
+        <p style="color:#aaa;font-size:.88rem"><strong style="color:#fff">RMSE</strong> — Root Mean Squared Error: Penalizes large errors</p>
+        <p style="color:#aaa;font-size:.88rem"><strong style="color:#fff">R² Score</strong> — How well model fits data (1.0 = perfect)</p>
+        <p style="color:#aaa;font-size:.88rem"><strong style="color:#fff">Accuracy</strong> — Overall prediction accuracy %</p>
+      </div>
+
+      {% if recent_predictions %}
+      <div class="card-crypto p-4">
+        <h5 class="fw-bold mb-3" style="color:#fff"><i class="fas fa-history me-2"></i>Recent Predictions</h5>
+        {% for pred in recent_predictions %}
+        <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid rgba(255,255,255,.05)">
+          <div>
+            <strong style="color:var(--primary)">{{ pred.crypto.symbol }}</strong>
+            <span class="badge-algo ms-2">{{ pred.get_algorithm_display }}</span>
+          </div>
+          <div class="text-end">
+            <div style="color:#fff">${{ pred.predicted_price|floatformat:2 }}</div>
+            <small style="color:#888">{{ pred.prediction_date }}</small>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Set min date to tomorrow
+const tomorrow = new Date();
+tomorrow.setDate(tomorrow.getDate()+1);
+document.getElementById('targetDate').min = tomorrow.toISOString().split('T')[0];
+document.getElementById('targetDate').value = tomorrow.toISOString().split('T')[0];
+
+function selectCrypto(sym, el) {
+  document.querySelectorAll('.crypto-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('cryptoSelect').value = sym;
+}
+
+function selectAlgo(algo, el) {
+  document.querySelectorAll('.algo-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('algoInput').value = algo;
+}
+
+document.getElementById('predForm').addEventListener('submit', function(){
+  const btn = document.getElementById('predictBtn');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Running ML Model...';
+  btn.disabled = true;
+});
+</script>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'crypto_app/base.html' %}
+{% block title %}Register — CryptoPredictor{% endblock %}
+{% block extra_css %}
+<style>
+.auth-wrapper { min-height:85vh;display:flex;align-items:center;padding:40px 0;background:radial-gradient(ellipse at center,rgba(247,147,26,.05) 0%,transparent 70%); }
+.auth-card { background:var(--card-bg);border:1px solid var(--border);border-radius:20px;padding:40px;max-width:560px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5); }
+.form-control { background:rgba(255,255,255,.05)!important;border:1px solid rgba(247,147,26,.3)!important;color:#fff!important;border-radius:10px;padding:12px 16px; }
+.form-control:focus { border-color:var(--primary)!important;box-shadow:0 0 0 3px rgba(247,147,26,.15)!important; }
+.form-label { color:#aaa;font-weight:500; }
+.errorlist { list-style:none;padding:0;color:#ff6b6b;font-size:.85rem;margin-top:4px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="auth-wrapper">
+  <div class="container d-flex justify-content-center">
+    <div class="auth-card">
+      <div class="text-center mb-4">
+        <img src="https://bitcoin.org/img/icons/opengraph.png" width="55" class="rounded-circle mb-3" alt="BTC"/>
+        <h2 style="font-family:'Orbitron',sans-serif;color:var(--primary);font-weight:900">CREATE ACCOUNT</h2>
+        <p style="color:#888">Join CryptoPredictor AI</p>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label">First Name</label>
+            <input type="text" name="first_name" class="form-control" required placeholder="First name"/>
+            {{ form.first_name.errors }}
+          </div>
+          <div class="col-6">
+            <label class="form-label">Last Name</label>
+            <input type="text" name="last_name" class="form-control" required placeholder="Last name"/>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" required placeholder="Choose a username"/>
+            {{ form.username.errors }}
+          </div>
+          <div class="col-12">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" required placeholder="your@email.com"/>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Phone (optional)</label>
+            <input type="text" name="phone" class="form-control" placeholder="+91 9999999999"/>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Password</label>
+            <input type="password" name="password1" class="form-control" required placeholder="Strong password"/>
+            {{ form.password1.errors }}
+          </div>
+          <div class="col-12">
+            <label class="form-label">Confirm Password</label>
+            <input type="password" name="password2" class="form-control" required placeholder="Repeat password"/>
+            {{ form.password2.errors }}
+          </div>
+        </div>
+        <button type="submit" class="btn btn-crypto w-100 py-3 mt-4">
+          <i class="fas fa-user-plus me-2"></i>Create Account
+        </button>
+      </form>
+      <div class="text-center mt-3">
+        <p style="color:#888">Already have an account? <a href="{% url 'login' %}" style="color:var(--primary)">Login</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

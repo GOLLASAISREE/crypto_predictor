@@ -1,0 +1,84 @@
+{% extends 'crypto_app/base.html' %}
+{% block title %}All Predictions — Admin{% endblock %}
+{% block extra_css %}
+<style>
+.pred-table th { color:#888;font-size:.82rem;text-transform:uppercase;letter-spacing:1px;border-color:rgba(255,255,255,.06)!important; }
+.pred-table td { border-color:rgba(255,255,255,.05)!important;color:#ddd;vertical-align:middle; }
+.pred-table tr:hover td { background:rgba(247,147,26,.04)!important; }
+.admin-nav .nav-link { color:#aaa;border:1px solid transparent;border-radius:8px;margin:2px; }
+.admin-nav .nav-link:hover,.admin-nav .nav-link.active { background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.3);color:var(--accent); }
+.algo-lr{background:rgba(0,123,255,.15);color:#4da6ff;border:1px solid rgba(0,123,255,.3);}
+.algo-lstm{background:rgba(147,0,255,.15);color:#b66dff;border:1px solid rgba(147,0,255,.3);}
+.algo-svm{background:rgba(0,255,136,.1);color:#00ff88;border:1px solid rgba(0,255,136,.3);}
+.algo-rf{background:rgba(255,193,7,.1);color:#ffd700;border:1px solid rgba(255,193,7,.3);}
+.algo-pill{padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:600;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row g-4">
+    <div class="col-md-2">
+      <div class="card-crypto p-3">
+        <div class="text-center mb-3">
+          <i class="fas fa-shield-alt" style="font-size:2rem;color:var(--accent)"></i>
+          <div style="font-family:'Orbitron',sans-serif;font-size:.8rem;color:var(--accent);margin-top:5px">ADMIN PANEL</div>
+        </div>
+        <nav class="nav flex-column admin-nav">
+          <a class="nav-link" href="{% url 'admin_dashboard' %}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a>
+          <a class="nav-link" href="{% url 'manage_users' %}"><i class="fas fa-users me-2"></i>Manage Users</a>
+          <a class="nav-link active" href="{% url 'admin_predictions' %}"><i class="fas fa-chart-line me-2"></i>All Predictions</a>
+          <hr style="border-color:rgba(255,255,255,.1)"/>
+          <a class="nav-link" href="{% url 'home' %}"><i class="fas fa-home me-2"></i>Main Site</a>
+          <a class="nav-link" href="{% url 'logout' %}" style="color:#ff6b6b"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
+        </nav>
+      </div>
+    </div>
+    <div class="col-md-10">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2 style="font-family:'Orbitron',sans-serif;color:var(--primary);font-weight:900"><i class="fas fa-chart-line me-2"></i>ALL PREDICTIONS</h2>
+          <p style="color:#888;margin:0">{{ predictions.count }} total predictions across all users</p>
+        </div>
+      </div>
+      <div class="card-crypto p-0 overflow-hidden">
+        <div class="table-responsive">
+          <table class="table pred-table mb-0">
+            <thead style="background:rgba(255,255,255,.03)">
+              <tr>
+                <th class="p-3">User</th>
+                <th class="p-3">Crypto</th>
+                <th class="p-3">Algorithm</th>
+                <th class="p-3">Target Date</th>
+                <th class="p-3">Current $</th>
+                <th class="p-3">Predicted $</th>
+                <th class="p-3">Accuracy</th>
+                <th class="p-3">R²</th>
+                <th class="p-3">Run At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in predictions %}
+              <tr>
+                <td class="p-3"><strong>{{ p.user.username }}</strong></td>
+                <td class="p-3"><strong style="color:var(--primary)">{{ p.crypto.symbol }}</strong></td>
+                <td class="p-3"><span class="algo-pill algo-{{ p.algorithm }}">{{ p.get_algorithm_display }}</span></td>
+                <td class="p-3">{{ p.prediction_date }}</td>
+                <td class="p-3">${{ p.current_price|floatformat:2 }}</td>
+                <td class="p-3"><strong>${{ p.predicted_price|floatformat:2 }}</strong></td>
+                <td class="p-3">
+                  {% if p.accuracy %}<span style="color:var(--primary)">{{ p.accuracy|floatformat:1 }}%</span>{% else %}—{% endif %}
+                </td>
+                <td class="p-3">{% if p.r2_score %}{{ p.r2_score|floatformat:3 }}{% else %}—{% endif %}</td>
+                <td class="p-3"><small style="color:#666">{{ p.created_at|date:"d M Y H:i" }}</small></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="9" class="text-center py-5" style="color:#666">No predictions yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

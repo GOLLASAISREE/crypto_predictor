@@ -1,0 +1,98 @@
+{% extends 'crypto_app/base.html' %}
+{% block title %}Manage Users — Admin{% endblock %}
+{% block extra_css %}
+<style>
+.user-table th { color:#888;font-size:.82rem;text-transform:uppercase;letter-spacing:1px;border-color:rgba(255,255,255,.06)!important; }
+.user-table td { border-color:rgba(255,255,255,.05)!important;color:#ddd;vertical-align:middle; }
+.user-table tr:hover td { background:rgba(0,212,255,.03)!important; }
+.admin-nav .nav-link { color:#aaa;border:1px solid transparent;border-radius:8px;margin:2px; }
+.admin-nav .nav-link:hover,.admin-nav .nav-link.active { background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.3);color:var(--accent); }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row g-4">
+    <div class="col-md-2">
+      <div class="card-crypto p-3">
+        <div class="text-center mb-3">
+          <i class="fas fa-shield-alt" style="font-size:2rem;color:var(--accent)"></i>
+          <div style="font-family:'Orbitron',sans-serif;font-size:.8rem;color:var(--accent);margin-top:5px">ADMIN PANEL</div>
+        </div>
+        <nav class="nav flex-column admin-nav">
+          <a class="nav-link" href="{% url 'admin_dashboard' %}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a>
+          <a class="nav-link active" href="{% url 'manage_users' %}"><i class="fas fa-users me-2"></i>Manage Users</a>
+          <a class="nav-link" href="{% url 'admin_predictions' %}"><i class="fas fa-chart-line me-2"></i>All Predictions</a>
+          <hr style="border-color:rgba(255,255,255,.1)"/>
+          <a class="nav-link" href="{% url 'home' %}"><i class="fas fa-home me-2"></i>Main Site</a>
+          <a class="nav-link" href="{% url 'logout' %}" style="color:#ff6b6b"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
+        </nav>
+      </div>
+    </div>
+    <div class="col-md-10">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2 style="font-family:'Orbitron',sans-serif;color:var(--accent);font-weight:900"><i class="fas fa-users me-2"></i>MANAGE USERS</h2>
+          <p style="color:#888;margin:0">{{ users.count }} registered users</p>
+        </div>
+      </div>
+      <div class="card-crypto p-0 overflow-hidden">
+        <div class="table-responsive">
+          <table class="table user-table mb-0">
+            <thead style="background:rgba(255,255,255,.03)">
+              <tr>
+                <th class="p-3">#</th>
+                <th class="p-3">Username</th>
+                <th class="p-3">Full Name</th>
+                <th class="p-3">Email</th>
+                <th class="p-3">Joined</th>
+                <th class="p-3">Predictions</th>
+                <th class="p-3">Status</th>
+                <th class="p-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in users %}
+              <tr>
+                <td class="p-3" style="color:#666">{{ forloop.counter }}</td>
+                <td class="p-3"><strong>{{ u.username }}</strong></td>
+                <td class="p-3">{{ u.get_full_name|default:"—" }}</td>
+                <td class="p-3"><small>{{ u.email|default:"—" }}</small></td>
+                <td class="p-3"><small>{{ u.date_joined|date:"d M Y" }}</small></td>
+                <td class="p-3">
+                  <span class="badge-algo">{{ u.predictionresult_set.count }}</span>
+                </td>
+                <td class="p-3">
+                  {% if u.is_active %}
+                    <span class="badge bg-success">Active</span>
+                  {% else %}
+                    <span class="badge bg-danger">Inactive</span>
+                  {% endif %}
+                </td>
+                <td class="p-3">
+                  <div class="d-flex gap-1 flex-wrap">
+                    <a href="{% url 'edit_user' u.id %}" class="btn btn-sm btn-outline-warning" title="Edit">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'toggle_user' u.id %}" class="btn btn-sm {% if u.is_active %}btn-outline-secondary{% else %}btn-outline-success{% endif %}" title="Toggle">
+                      <i class="fas fa-{% if u.is_active %}ban{% else %}check{% endif %}"></i>
+                    </a>
+                    <form method="post" action="{% url 'delete_user' u.id %}" style="display:inline" onsubmit="return confirm('Delete user {{ u.username }}?')">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="8" class="text-center py-5" style="color:#666"><i class="fas fa-users" style="font-size:2rem;opacity:.3"></i><br>No users registered yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

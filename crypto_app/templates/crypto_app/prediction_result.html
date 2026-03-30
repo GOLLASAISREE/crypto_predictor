@@ -1,0 +1,271 @@
+{% extends 'crypto_app/base.html' %}
+{% block title %}Prediction Result — {{ crypto_symbol }}{% endblock %}
+{% block extra_css %}
+<style>
+.result-hero {
+  background: linear-gradient(135deg, rgba(10,10,26,1), rgba(20,10,0,1));
+  border: 1px solid var(--border); border-radius: 24px; padding: 40px;
+}
+.price-display {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 900;
+}
+.metric-card {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px; padding: 20px; text-align: center;
+}
+.metric-value { font-family:'Orbitron',sans-serif; font-size:1.6rem; font-weight:700; color:var(--primary); }
+.metric-label { color:#888; font-size:.82rem; margin-top:5px; }
+.signal-card {
+  border-radius: 16px; padding: 28px; border: 2px solid;
+}
+.signal-card.success { background:rgba(0,255,136,.08); border-color:rgba(0,255,136,.4); }
+.signal-card.primary { background:rgba(0,123,255,.08); border-color:rgba(0,123,255,.4); }
+.signal-card.info { background:rgba(0,212,255,.08); border-color:rgba(0,212,255,.4); }
+.signal-card.warning { background:rgba(255,193,7,.08); border-color:rgba(255,193,7,.4); }
+.signal-card.danger { background:rgba(255,68,102,.08); border-color:rgba(255,68,102,.4); }
+.suggestion-box {
+  background: rgba(255,255,255,.03); border: 1px solid var(--border);
+  border-radius: 14px; padding: 24px; font-size:.93rem; line-height:1.7;
+}
+.chart-container { position:relative; height:300px; }
+.algo-badge {
+  background: linear-gradient(135deg,rgba(247,147,26,.2),rgba(0,212,255,.1));
+  border: 1px solid var(--border); border-radius: 20px; padding: 6px 18px;
+  font-size: .9rem; display:inline-flex; align-items:center; gap:8px;
+}
+.change-up { color:#00ff88; }
+.change-down { color:#ff4466; }
+.progress-bar-custom { height:10px;border-radius:5px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+  <!-- BACK -->
+  <div class="mb-4">
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i>New Prediction
+    </a>
+    <a href="{% url 'prediction_history' %}" class="btn btn-outline-warning btn-sm ms-2">
+      <i class="fas fa-history me-1"></i>View All History
+    </a>
+  </div>
+
+  <!-- HERO RESULT CARD -->
+  <div class="result-hero mb-4">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-6">
+        <div class="algo-badge mb-3">
+          <i class="fas fa-robot"></i>
+          {{ algorithm }}
+        </div>
+        <h2 class="fw-bold mb-1" style="color:#aaa;font-size:1rem;text-transform:uppercase;letter-spacing:2px">
+          {{ crypto_symbol }} Price Prediction for {{ target_date }}
+        </h2>
+        <div class="price-display mb-2">
+          <span class="glow-text">${{ result.predicted_price|floatformat:2 }}</span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <span style="color:#888">Current: <strong style="color:#fff">${{ result.current_price|floatformat:2 }}</strong></span>
+          <span class="{% if result.change_pct >= 0 %}change-up{% else %}change-down{% endif %} fw-bold">
+            {% if result.change_pct >= 0 %}▲{% else %}▼{% endif %} {{ result.change_pct|floatformat:2 }}%
+          </span>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="signal-card {{ result.signal_color }} text-center">
+          <div style="font-size:3rem;margin-bottom:8px">
+            {% if result.signal_color == 'success' %}🚀
+            {% elif result.signal_color == 'primary' %}📈
+            {% elif result.signal_color == 'info' %}👀
+            {% elif result.signal_color == 'warning' %}⚠️
+            {% else %}📉{% endif %}
+          </div>
+          <h3 class="fw-bold" style="font-family:'Orbitron',sans-serif;font-size:1.2rem">
+            {{ result.signal }}
+          </h3>
+          <p style="color:#aaa;margin:0;font-size:.9rem">
+            {% if result.change_pct >= 15 %}Excellent investment opportunity!
+            {% elif result.change_pct >= 5 %}Good time to consider investing.
+            {% elif result.change_pct >= 0 %}Monitor the market carefully.
+            {% elif result.change_pct >= -5 %}Consider waiting before investing.
+            {% else %}Not recommended to invest now.{% endif %}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- ML METRICS -->
+    <div class="col-12">
+      <div class="card-crypto p-4">
+        <h5 class="fw-bold mb-3" style="color:#fff"><i class="fas fa-chart-bar me-2" style="color:var(--primary)"></i>Model Performance Metrics</h5>
+        <div class="row g-3">
+          <div class="col-6 col-md-3">
+            <div class="metric-card">
+              <div class="metric-value">{{ result.accuracy|floatformat:1 }}%</div>
+              <div class="metric-label">Model Accuracy</div>
+              <div class="progress mt-2" style="height:6px;background:rgba(255,255,255,.1)">
+                <div class="progress-bar" style="width:{{ result.accuracy }}%;background:var(--primary)"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="metric-card">
+              <div class="metric-value" style="color:var(--accent)">${{ result.mae|floatformat:2 }}</div>
+              <div class="metric-label">MAE (Mean Abs. Error)</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="metric-card">
+              <div class="metric-value" style="color:#00ff88">${{ result.rmse|floatformat:2 }}</div>
+              <div class="metric-label">RMSE</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="metric-card">
+              <div class="metric-value" style="color:#ff9f43">{{ result.r2_score|floatformat:4 }}</div>
+              <div class="metric-label">R² Score (fit quality)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRICE CHART -->
+    <div class="col-lg-8">
+      <div class="card-crypto p-4">
+        <h5 class="fw-bold mb-3" style="color:#fff">
+          <i class="fas fa-chart-area me-2" style="color:var(--primary)"></i>
+          {{ crypto_symbol }} Price History + Prediction
+        </h5>
+        <div class="chart-container">
+          <canvas id="priceChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVESTMENT SUGGESTION -->
+    <div class="col-lg-4">
+      <div class="card-crypto p-4 h-100">
+        <h5 class="fw-bold mb-3" style="color:#fff">
+          <i class="fas fa-lightbulb me-2" style="color:#ffd700"></i>
+          AI Investment Advice
+        </h5>
+        <div class="suggestion-box">
+          {{ result.investment_suggestion|safe }}
+        </div>
+        <div class="mt-3">
+          <div class="d-flex justify-content-between mb-1" style="font-size:.85rem">
+            <span style="color:#888">Bull Probability</span>
+            <span style="color:#00ff88">{% if result.change_pct >= 0 %}{{ result.change_pct|floatformat:0 }}%{% else %}5%{% endif %}</span>
+          </div>
+          <div class="progress" style="height:8px;background:rgba(255,255,255,.1)">
+            <div class="progress-bar bg-success" style="width:{% if result.change_pct >= 0 %}{{ result.change_pct|floatformat:0 }}{% else %}5{% endif %}%"></div>
+          </div>
+        </div>
+        <div class="mt-3 p-3" style="background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.2);border-radius:10px;font-size:.82rem;color:#aaa">
+          <i class="fas fa-exclamation-triangle me-1" style="color:#ffd700"></i>
+          This is AI-generated analysis for educational purposes only. Crypto markets are highly volatile. Always DYOR.
+        </div>
+      </div>
+    </div>
+
+    {% if result.feature_importance %}
+    <!-- FEATURE IMPORTANCE (RF only) -->
+    <div class="col-12">
+      <div class="card-crypto p-4">
+        <h5 class="fw-bold mb-3" style="color:#fff"><i class="fas fa-tree me-2" style="color:#00ff88"></i>Feature Importance (Random Forest)</h5>
+        <div class="row g-2">
+          {% for feature, importance in result.feature_importance.items %}
+          <div class="col-md-4 col-6">
+            <div class="d-flex justify-content-between mb-1" style="font-size:.85rem">
+              <span style="color:#aaa">{{ feature }}</span>
+              <span style="color:var(--primary)">{{ importance }}%</span>
+            </div>
+            <div class="progress" style="height:6px;background:rgba(255,255,255,.1)">
+              <div class="progress-bar" style="width:{{ importance }}%;background:linear-gradient(90deg,var(--primary),var(--accent))"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- row -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const histPrices = {{ result.history_prices|safe }};
+const histDates = {{ result.history_dates|safe }};
+const predPrice = {{ result.predicted_price }};
+const targetDate = "{{ target_date }}";
+
+const labels = [...histDates, targetDate];
+const data = [...histPrices, null];
+const predData = [...Array(histPrices.length-1).fill(null), histPrices[histPrices.length-1], predPrice];
+
+const ctx = document.getElementById('priceChart').getContext('2d');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: labels,
+    datasets: [
+      {
+        label: 'Historical Price',
+        data: data,
+        borderColor: '#f7931a',
+        backgroundColor: 'rgba(247,147,26,.08)',
+        borderWidth: 2,
+        pointRadius: 2,
+        tension: 0.3,
+        fill: true,
+      },
+      {
+        label: 'Predicted Price',
+        data: predData,
+        borderColor: '#00d4ff',
+        backgroundColor: 'rgba(0,212,255,.08)',
+        borderWidth: 3,
+        borderDash: [8,4],
+        pointRadius: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8],
+        pointBackgroundColor: '#00d4ff',
+        tension: 0.3,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color:'#aaa', font:{size:12} } },
+      tooltip: {
+        callbacks: {
+          label: ctx => `$${ctx.raw?.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) || 'N/A'}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color:'#666', maxTicksLimit:8 },
+        grid: { color:'rgba(255,255,255,.04)' }
+      },
+      y: {
+        ticks: {
+          color:'#888',
+          callback: v => '$' + v.toLocaleString()
+        },
+        grid: { color:'rgba(255,255,255,.04)' }
+      }
+    }
+  }
+});
+</script>
+{% endblock %}
