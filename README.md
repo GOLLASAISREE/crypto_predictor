@@ -160,3 +160,34 @@ Based on predicted price change %:
 
 ## ⚠️ Disclaimer
 This application is for **educational purposes only**. Not financial advice.
+
+---
+
+## ☁️ Deploy on Vercel (Git-based)
+
+Vercel is workable for this Django project, but you must use an external Postgres database (SQLite is local-only).
+
+### 1. Import Repository in Vercel
+- Go to Vercel dashboard → **Add New...** → **Project**
+- Select repo: `GOLLASAISREE/crypto_predictor`
+- Keep defaults and deploy
+
+### 2. Add Environment Variables in Vercel Project Settings
+- `SECRET_KEY` = any long random string
+- `DEBUG` = `False`
+- `DATABASE_URL` = your hosted Postgres connection URL
+- `ALLOWED_HOSTS` = `.vercel.app`
+- `CSRF_TRUSTED_ORIGINS` = `https://*.vercel.app`
+
+### 3. Redeploy
+- Trigger a redeploy after setting env vars.
+
+### 4. Run Migrations (one-time)
+- Use Vercel CLI or a temporary local command against the same `DATABASE_URL`:
+```bash
+python manage.py migrate
+```
+
+### Notes
+- Netlify is not recommended for this full Django app.
+- This repo already includes `vercel.json` for routing to Django WSGI.
